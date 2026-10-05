@@ -1,0 +1,52 @@
+name: Compilar Mouse Bluetooth HID
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Extraer proyecto
+        run: |
+          unzip -o MouseBluetoothHID_PRUEBA_V1.zip
+          echo "Contenido:"
+          find . -maxdepth 4 -type f | sort
+
+      - name: Localizar proyecto Android
+        run: |
+          SETTINGS=$(find . -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) | head -1)
+          if [ -z "$SETTINGS" ]; then
+            echo "ERROR: No se encontró settings.gradle"
+            exit 1
+          fi
+          echo "Proyecto encontrado en: $(dirname "$SETTINGS")"
+
+      - name: Compilar APK
+        run: |
+          PROJECT_DIR=$(dirname "$(find . -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) | head -1)")
+          cd "$PROJECT_DIR"
+          gradle assembleDebug --stacktrace
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MouseBluetooth-debug
+          path: "**/app/build/outputs/apk/debug/app-debug.apk"
